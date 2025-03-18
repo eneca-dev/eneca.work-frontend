@@ -8,10 +8,11 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { LogOut, User, Home, Calendar, Send, ChevronLeft, Settings } from "lucide-react"
 import { useState } from "react"
+import { useAuth } from "@/hooks/useAuth"
 
 interface SidebarProps {
   user: {
-    name: string
+    name?: string
     email: string
   }
 }
@@ -19,9 +20,15 @@ interface SidebarProps {
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const { logout } = useAuth()
 
   const toggleSidebar = () => {
     setCollapsed(!collapsed)
+  }
+
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    await logout()
   }
 
   const menuItems = [
@@ -62,7 +69,7 @@ export function Sidebar({ user }: SidebarProps) {
           />
           {!collapsed && (
             <h1 className="text-xl font-mono ml-3">
-              <span className="text-primary">eneca</span>
+              <span className="text-[#1e7260]">eneca</span>
               <span className="dark:text-gray-200">.work</span>
             </h1>
           )}
@@ -86,7 +93,7 @@ export function Sidebar({ user }: SidebarProps) {
                   className={cn(
                     "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                     pathname === item.href
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-[#1e7260]/10 text-[#1e7260]"
                       : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700",
                     collapsed && "justify-center px-0",
                   )}
@@ -102,12 +109,12 @@ export function Sidebar({ user }: SidebarProps) {
         {/* User and Theme */}
         <div className="border-t border-gray-200 dark:border-gray-700 p-4">
           <div className={cn("flex items-center", collapsed ? "flex-col space-y-2" : "space-x-3")}>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <User className="h-4 w-4 text-primary" />
+            <div className="h-8 w-8 rounded-full bg-[#1e7260]/10 flex items-center justify-center flex-shrink-0">
+              <User className="h-4 w-4 text-[#1e7260]" />
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate dark:text-gray-200">{user.name}</p>
+                <p className="text-sm font-medium truncate dark:text-gray-200">{user.name || 'Пользователь'}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
               </div>
             )}
@@ -123,11 +130,9 @@ export function Sidebar({ user }: SidebarProps) {
                 </Button>
               </Link>
 
-              <Link href="/auth/login">
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </Link>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           ) : (
             <div className="mt-4 space-y-2">
@@ -138,11 +143,9 @@ export function Sidebar({ user }: SidebarProps) {
                     <Settings className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                   </Button>
                 </Link>
-                <Link href="/auth/login">
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </Link>
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           )}

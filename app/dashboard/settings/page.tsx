@@ -11,8 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function SettingsPage() {
+  const { user, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -43,13 +45,16 @@ export default function SettingsPage() {
     }
   }, [])
 
-  if (!mounted) {
-    return null
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
   }
 
-  const user = {
-    name: "Иван Иванов",
-    email: "ivan@example.com",
+  if (!mounted) {
+    return null
   }
 
   const handleSave = (e: React.FormEvent) => {
@@ -60,12 +65,12 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      <Sidebar user={user} />
+      <Sidebar user={{ name: user?.profile?.full_name, email: user?.email || '' }} />
 
       <div className={`transition-all duration-300 ${sidebarCollapsed ? "pl-20" : "pl-64"}`}>
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center space-x-2 mb-6">
-            <Settings className="h-6 w-6 text-primary" />
+            <Settings className="h-6 w-6 text-[#1e7260]" />
             <h1 className="text-2xl font-medium dark:text-gray-200">Настройки аккаунта</h1>
           </div>
 
@@ -103,10 +108,10 @@ export default function SettingsPage() {
                 <CardContent>
                   <form onSubmit={handleSave} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <AuthInput label="Имя" id="name" type="text" defaultValue={user.name} required />
-                      <AuthInput label="Email" id="email" type="email" defaultValue={user.email} required />
-                      <AuthInput label="Должность" id="position" type="text" defaultValue="Менеджер" />
-                      <AuthInput label="Телефон" id="phone" type="tel" defaultValue="+7 (999) 123-45-67" />
+                      <AuthInput label="Имя" id="name" type="text" defaultValue={user?.profile?.full_name || ''} required />
+                      <AuthInput label="Email" id="email" type="email" defaultValue={user?.email || ''} required />
+                      <AuthInput label="Должность" id="position" type="text" defaultValue={user?.profile?.position || 'Менеджер'} />
+                      <AuthInput label="Телефон" id="phone" type="tel" defaultValue={user?.profile?.phone || '+7 (999) 123-45-67'} />
                     </div>
 
                     <div className="flex justify-end">
@@ -125,7 +130,7 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <User className="h-12 w-12 text-primary" />
+                    <User className="h-12 w-12 text-[#1e7260]" />
                   </div>
                   <div className="flex flex-col gap-4 w-full">
                     <div className="flex flex-col sm:flex-row gap-2">

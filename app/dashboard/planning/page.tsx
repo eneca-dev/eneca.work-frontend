@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react"
 import { Calendar } from "lucide-react"
 import { Sidebar } from "@/components/sidebar"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function PlanningPage() {
+  const { user, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -34,24 +36,27 @@ export default function PlanningPage() {
     }
   }, [])
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
   if (!mounted) {
     return null
   }
 
-  const user = {
-    name: "Иван Иванов",
-    email: "ivan@example.com",
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      <Sidebar user={user} />
+      <Sidebar user={{ name: user?.profile?.full_name, email: user?.email || '' }} />
 
       <div className={`transition-all duration-300 ${sidebarCollapsed ? "pl-20" : "pl-64"}`}>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-6 animate-fade-in transition-colors duration-200">
             <div className="flex items-center space-x-2 mb-4">
-              <Calendar className="h-5 w-5 text-primary" />
+              <Calendar className="h-5 w-5 text-[#1e7260]" />
               <h2 className="text-lg font-medium dark:text-gray-200">Система планирования</h2>
             </div>
 
