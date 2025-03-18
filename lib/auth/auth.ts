@@ -53,6 +53,22 @@ export async function logout(): Promise<void> {
 }
 
 /**
+ * Refresh authentication token
+ */
+export async function refreshToken(): Promise<LoginResponse> {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include', // Important for cookies
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to refresh token');
+  }
+
+  return response.json();
+}
+
+/**
  * Get current session (to be used on page load or app initialization)
  */
 export async function getSession(): Promise<LoginResponse | null> {

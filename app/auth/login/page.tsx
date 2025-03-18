@@ -8,14 +8,45 @@ import { useRouter } from "next/navigation"
 import { AuthButton } from "@/components/auth-button"
 import { AuthInput } from "@/components/auth-input"
 import { LoginAnimation } from "@/components/login-animation"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function LoginPage() {
+  const { login, error: authError } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Валидация
+    if (!email) {
+      setError("Email обязателен")
+      return
+    }
+    
+    if (!password) {
+      setError("Пароль обязателен")
+      return
+    }
+    
+    if (password.length < 8) {
+      setError("Пароль должен быть не менее 8 символов")
+      return
+    }
+    
+    setError(null)
     setLoading(true)
+    
+    try {
+      await login(email, password)
+      // После успешного входа включаем анимацию
+    } catch (err: any) {
+      setError(err.message || "Ошибка входа")
+      setLoading(false)
+    }
   }
 
   const handleAnimationComplete = () => {
@@ -30,6 +61,12 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground">Введите ваши данные для входа</p>
         </div>
 
+        {(error || authError) && (
+          <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+            {error || authError}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <AuthInput
             label="Email"
@@ -38,6 +75,9 @@ export default function LoginPage() {
             placeholder="name@example.com"
             required
             autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
           />
 
           <div className="space-y-2">
@@ -49,6 +89,9 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
                 showPasswordToggle={true}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
               />
             </div>
             <div className="flex justify-end">

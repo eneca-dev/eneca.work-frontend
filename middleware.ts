@@ -1,31 +1,31 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// List of paths that require authentication
+// Пути, требующие аутентификации
 const protectedPaths = ['/dashboard', '/profile', '/settings'];
 
-// List of paths that are accessible only for non-authenticated users
-const authPaths = ['/login', '/register', '/forgot-password'];
+// Пути, доступные только для неаутентифицированных пользователей
+const authPaths = ['/auth/login', '/auth/register', '/auth/forgot-password'];
 
 /**
- * Middleware to protect routes based on authentication status
+ * Middleware для защиты маршрутов на основе статуса аутентификации
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Check if auth cookie exists
+  // Проверка наличия cookie аутентификации
   const authCookie = request.cookies.get('auth-token');
   const isAuthenticated = !!authCookie;
 
-  // Redirect logic for protected routes when not authenticated
+  // Редирект для защищенных маршрутов, если пользователь не аутентифицирован
   if (protectedPaths.some(path => pathname.startsWith(path)) && !isAuthenticated) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
+    url.pathname = '/auth/login';
     url.searchParams.set('from', pathname);
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth pages
+  // Редирект аутентифицированных пользователей от страниц аутентификации
   if (authPaths.some(path => pathname === path) && isAuthenticated) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
@@ -37,13 +37,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all protected routes
+    // Защищенные маршруты
     '/dashboard/:path*',
     '/profile/:path*',
     '/settings/:path*',
-    // Match all auth routes
-    '/login',
-    '/register',
-    '/forgot-password',
+    // Маршруты аутентификации
+    '/auth/login',
+    '/auth/register',
+    '/auth/forgot-password',
   ],
 }; 
