@@ -35,7 +35,7 @@ export interface RegisterResponse {
  * Login user with credentials
  */
 export async function login(credentials: LoginCredentials): Promise<LoginResponse> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/login`, {
+  const response = await fetch(`/api/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -56,7 +56,7 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
  * Register new user
  */
 export async function register(credentials: RegisterCredentials): Promise<RegisterResponse> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/register`, {
+  const response = await fetch(`/api/auth/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ export async function register(credentials: RegisterCredentials): Promise<Regist
  * Resend confirmation email
  */
 export async function resendConfirmation(email: string): Promise<void> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/resend-confirmation`, {
+  const response = await fetch(`/api/auth/resend-confirmation`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -99,7 +99,7 @@ export async function resendConfirmation(email: string): Promise<void> {
  * Logout user
  */
 export async function logout(): Promise<void> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/logout`, {
+  const response = await fetch(`/api/auth/logout`, {
     method: 'POST',
     credentials: 'include', // Important for cookies
   });
@@ -114,7 +114,7 @@ export async function logout(): Promise<void> {
  * Refresh authentication token
  */
 export async function refreshToken(): Promise<LoginResponse> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/refresh`, {
+  const response = await fetch(`/api/auth/refresh`, {
     method: 'POST',
     credentials: 'include', // Important for cookies
   });
@@ -131,7 +131,7 @@ export async function refreshToken(): Promise<LoginResponse> {
  */
 export async function getSession(): Promise<LoginResponse | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/session`, {
+    const response = await fetch(`/api/auth/session`, {
       credentials: 'include', // Important for cookies
     });
 
