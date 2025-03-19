@@ -16,6 +16,21 @@ interface LoginResponse {
   expiresAt: number;
 }
 
+export interface RegisterCredentials {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  user?: {
+    id: string;
+    email: string;
+  };
+}
+
 /**
  * Login user with credentials
  */
@@ -35,6 +50,49 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
   }
 
   return response.json();
+}
+
+/**
+ * Register new user
+ */
+export async function register(credentials: RegisterCredentials): Promise<RegisterResponse> {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(credentials),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to register');
+  }
+
+  // Save email for potential resend
+  localStorage.setItem("registerEmail", credentials.email);
+  
+  return response.json();
+}
+
+/**
+ * Resend confirmation email
+ */
+export async function resendConfirmation(email: string): Promise<void> {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/resend-confirmation`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to resend confirmation');
+  }
 }
 
 /**

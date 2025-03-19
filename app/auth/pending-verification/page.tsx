@@ -3,15 +3,41 @@
 import Link from "next/link"
 import { AuthButton } from "@/components/auth-button"
 import { Mail, RefreshCw } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { resendConfirmation } from "@/lib/auth/auth"
 
 export default function PendingVerificationPage() {
   const [resending, setResending] = useState(false)
+  const [email, setEmail] = useState("")
+  const [resendError, setResendError] = useState("")
+  const [resendSuccess, setResendSuccess] = useState(false)
 
-  const handleResend = () => {
+  // Get email from localStorage
+  useEffect(() => {
+    const storedEmail = localStorage.getItem("registerEmail")
+    if (storedEmail) {
+      setEmail(storedEmail)
+    }
+  }, [])
+
+  const handleResend = async () => {
+    if (!email) {
+      setResendError("Email не найден. Пожалуйста, зарегистрируйтесь заново.")
+      return
+    }
+
     setResending(true)
-    // Simulate loading
-    setTimeout(() => setResending(false), 1500)
+    setResendError("")
+    setResendSuccess(false)
+    
+    try {
+      await resendConfirmation(email)
+      setResendSuccess(true)
+    } catch (err: any) {
+      setResendError(err.message || "Не удалось отправить письмо")
+    } finally {
+      setResending(false)
+    }
   }
 
   return (
@@ -22,7 +48,7 @@ export default function PendingVerificationPage() {
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-center dark:text-gray-100">Подтвердите ваш email</h1>
         <p className="text-sm text-muted-foreground text-center max-w-xs">
-          Мы отправили ссылку для подтверждения на ваш email. Пожалуйста, проверьте вашу почту и подтвердите аккаунт.
+          Мы отправили ссылку для подтверждения на {email ? <strong>{email}</strong> : "ваш email"}. Пожалуйста, проверьте вашу почту и подтвердите аккаунт.
         </p>
       </div>
 
@@ -33,6 +59,18 @@ export default function PendingVerificationPage() {
           <p className="text-muted-foreground">После подтверждения вы будете автоматически перенаправлены.</p>
         </div>
       </div>
+
+      {resendSuccess && (
+        <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-sm">
+          Письмо успешно отправлено повторно. Пожалуйста, проверьте вашу почту.
+        </div>
+      )}
+
+      {resendError && (
+        <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 text-sm">
+          {resendError}
+        </div>
+      )}
 
       <div className="space-y-6">
         <AuthButton variant="outline" onClick={handleResend} loading={resending}>
