@@ -40,6 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshAttemptsRef = useRef<number>(0);
   const router = useRouter();
   const initializedRef = useRef<boolean>(false);
+  // Add new ref to track last session check time
+  const lastSessionCheckRef = useRef<number>(0);
 
   // Function to refresh token
   const refreshSession = useCallback(async (forceRefresh = false) => {
@@ -165,6 +167,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // Only check session if we haven't initialized yet or it's been more than 10 seconds
+        const now = Date.now();
+        const timeSinceLastCheck = now - lastSessionCheckRef.current;
+        
+        // Skip if we already have a user and checked recently (within 10 seconds)
+        if (user && timeSinceLastCheck < 10000) {
+          console.log('[INIT] Skipping redundant session check - user already loaded');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Skip if we're already initialized and checked recently
+        if (initializedRef.current && timeSinceLastCheck < 10000) {
+          console.log('[INIT] Skipping redundant initialization - recent check performed');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Update last check time
+        lastSessionCheckRef.current = now;
+        
         console.log('[INIT] Starting authentication initialization');
         const session = await getSession();
         
