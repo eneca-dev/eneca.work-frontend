@@ -16,15 +16,18 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
+  refreshSession: () => Promise<void>;
 }
 
 // Create auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Minimum interval between token refreshes (15 minutes in ms)
-const MIN_REFRESH_INTERVAL = 15 * 60 * 1000;
+// Minimum interval between token refreshes (уменьшаем с 15 до 1 минуты)
+const MIN_REFRESH_INTERVAL = 60 * 1000;
 // Time before expiry to refresh token (5 minutes in ms)
 const REFRESH_BEFORE_EXPIRY = 5 * 60 * 1000;
+// Maximum attempts to refresh token before redirecting to login
+const MAX_REFRESH_ATTEMPTS = 3;
 
 // Auth provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -34,23 +37,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastRefreshTimeRef = useRef<number>(0);
+  const refreshAttemptsRef = useRef<number>(0);
   const router = useRouter();
 
   // Function to refresh token
-  const refreshSession = useCallback(async () => {
+  const refreshSession = useCallback(async (forceRefresh = false) => {
     try {
-      // Prevent refreshing too frequently
+      // Prevent refreshing too frequently, unless forced
       const now = Date.now();
-      if (now - lastRefreshTimeRef.current < MIN_REFRESH_INTERVAL) {
+      if (!forceRefresh && now - lastRefreshTimeRef.current < MIN_REFRESH_INTERVAL) {
         console.log('Skipping token refresh - too soon since last refresh');
         return;
       }
       
-      // Update last refresh time
+      // Если превышено количество попыток, сбрасываем счетчик и перенаправляем на логин
+      if (refreshAttemptsRef.current >= MAX_REFRESH_ATTEMPTS) {
+        console.log(`Max refresh attempts (${MAX_REFRESH_ATTEMPTS}) reached, redirecting to login`);
+        refreshAttemptsRef.current = 0;
+        setUser(null);
+        setExpiresAt(null);
+        router.push('/auth/login');
+        return;
+      }
+      
+      // Update last refresh time and increment attempts counter
       lastRefreshTimeRef.current = now;
+      refreshAttemptsRef.current += 1;
       
       console.log('Refreshing token...');
       const response = await refreshTokenApi();
+      
+      // Сброс счетчика попыток при успешном обновлении
+      refreshAttemptsRef.current = 0;
+      
+      // Обновляем пользователя и время истечения токена
       setUser(response.user);
       setExpiresAt(response.expiresAt);
       
@@ -58,10 +78,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       scheduleTokenRefresh(response.expiresAt);
     } catch (err) {
       console.error('Failed to refresh token:', err);
-      // Handle failed refresh - redirect to login
-      setUser(null);
-      setExpiresAt(null);
-      router.push('/auth/login');
+      
+      // Увеличиваем счетчик попыток, но не редиректим сразу
+      // Редирект произойдет при MAX_REFRESH_ATTEMPTS
+      if (refreshAttemptsRef.current >= MAX_REFRESH_ATTEMPTS) {
+        // Handle failed refresh after max attempts - redirect to login
+        setUser(null);
+        setExpiresAt(null);
+        router.push('/auth/login');
+      } else {
+        // Если ошибка 429 (rate limiting), делаем более длительную паузу перед следующей попыткой
+        const isRateLimited = err instanceof Error && err.message.includes('too frequently');
+        const retryDelay = isRateLimited ? 60000 : 5000; // 1 минута или 5 секунд
+        
+        console.log(`Will retry token refresh in ${retryDelay/1000} seconds`);
+        setTimeout(() => refreshSession(true), retryDelay);
+      }
     }
   }, [router]);
 
@@ -79,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Don't schedule if token is already expired
     if (timeUntilExpiry <= 0) {
       console.log('Token already expired, refreshing immediately');
-      refreshSession();
+      refreshSession(true); // Принудительное обновление
       return;
     }
     
@@ -89,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log(`Scheduling token refresh in ${Math.floor(refreshTime / 1000 / 60)} minutes`);
     
     refreshTimeoutRef.current = setTimeout(() => {
-      refreshSession();
+      refreshSession(true); // Принудительное обновление по таймауту
     }, refreshTime);
   }, [refreshSession]);
 
@@ -104,6 +136,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           // Initialize last refresh time
           lastRefreshTimeRef.current = Date.now();
+          
+          // Reset refresh attempts counter
+          refreshAttemptsRef.current = 0;
           
           // Schedule token refresh
           scheduleTokenRefresh(session.expiresAt);
@@ -126,32 +161,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [scheduleTokenRefresh]);
 
-  // Setup axios interceptor for handling 401 errors
+  // Setup fetch interceptor for handling 401 errors
   useEffect(() => {
-    // This would be the place to set up an interceptor for API requests
-    // to automatically try to refresh the token when a 401 is received
-    // Example using axios:
-    // 
-    // axios.interceptors.response.use(
-    //  response => response,
-    //  async error => {
-    //    if (error.response?.status === 401) {
-    //      try {
-    //        await refreshSession();
-    //        // Retry the original request
-    //        return axios(error.config);
-    //      } catch (refreshError) {
-    //        // If refresh fails, redirect to login
-    //        router.push('/auth/login');
-    //        return Promise.reject(refreshError);
-    //      }
-    //    }
-    //    return Promise.reject(error);
-    //  }
-    // );
+    // Оригинальная функция fetch
+    const originalFetch = window.fetch;
     
-    // Cleanup function would remove the interceptor
-  }, [refreshSession, router]);
+    // Замена на перехватчик
+    window.fetch = async (input, init) => {
+      try {
+        // Выполняем оригинальный запрос
+        const response = await originalFetch(input, init);
+        
+        // Перехватываем ошибку 401
+        if (response.status === 401) {
+          // Только для API запросов, не для внешних ресурсов
+          const url = typeof input === 'string' ? input : input.url;
+          if (url.includes('/api/') && user) {
+            console.log('Intercepted 401 response, attempting to refresh token');
+            try {
+              // Пытаемся обновить токен
+              await refreshSession(true);
+              
+              // Повторяем оригинальный запрос
+              return await originalFetch(input, init);
+            } catch (refreshError) {
+              console.error('Failed to refresh token in fetch interceptor:', refreshError);
+              // Если обновление не удалось, возвращаем исходный ответ с 401
+            }
+          }
+        }
+        
+        return response;
+      } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
+      }
+    };
+    
+    // Восстанавливаем оригинальную функцию при размонтировании
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, [refreshSession, user]);
 
   // Login function
   const login = async (email: string, password: string) => {
@@ -165,6 +216,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Initialize last refresh time
       lastRefreshTimeRef.current = Date.now();
+      
+      // Reset refresh attempts counter
+      refreshAttemptsRef.current = 0;
       
       // Schedule token refresh
       scheduleTokenRefresh(response.expiresAt);
@@ -204,7 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Provide auth context to children
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, error }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, error, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );

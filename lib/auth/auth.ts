@@ -32,10 +32,40 @@ export interface RegisterResponse {
 }
 
 /**
+ * Выполнение запроса к API с обработкой ошибок
+ */
+async function fetchWithErrorHandling(url: string, options: RequestInit) {
+  try {
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+      // Пытаемся получить сообщение об ошибке из JSON
+      try {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+      } catch (jsonError) {
+        // Если не удалось разобрать JSON, используем статус
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+    }
+    
+    return response;
+  } catch (error) {
+    // Улучшаем сообщение об ошибке для сетевых проблем
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error('Network error:', error);
+      throw new Error('Network error: Cannot connect to server. Please check your internet connection and try again.');
+    }
+    
+    throw error;
+  }
+}
+
+/**
  * Login user with credentials
  */
 export async function login(credentials: LoginCredentials): Promise<LoginResponse> {
-  const response = await fetch(`/api/auth/login`, {
+  const response = await fetchWithErrorHandling(`/api/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -44,11 +74,6 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
     credentials: 'include', // Important for cookies
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to login');
-  }
-
   return response.json();
 }
 
@@ -56,7 +81,7 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
  * Register new user
  */
 export async function register(credentials: RegisterCredentials): Promise<RegisterResponse> {
-  const response = await fetch(`/api/auth/register`, {
+  const response = await fetchWithErrorHandling(`/api/auth/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -64,11 +89,6 @@ export async function register(credentials: RegisterCredentials): Promise<Regist
     body: JSON.stringify(credentials),
     credentials: 'include',
   });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to register');
-  }
 
   // Save email for potential resend
   localStorage.setItem("registerEmail", credentials.email);
@@ -80,7 +100,7 @@ export async function register(credentials: RegisterCredentials): Promise<Regist
  * Resend confirmation email
  */
 export async function resendConfirmation(email: string): Promise<void> {
-  const response = await fetch(`/api/auth/resend-confirmation`, {
+  const response = await fetchWithErrorHandling(`/api/auth/resend-confirmation`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -89,39 +109,27 @@ export async function resendConfirmation(email: string): Promise<void> {
     credentials: 'include',
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to resend confirmation');
-  }
+  await response.json(); // Только для проверки, что ответ получен
 }
 
 /**
  * Logout user
  */
 export async function logout(): Promise<void> {
-  const response = await fetch(`/api/auth/logout`, {
+  await fetchWithErrorHandling(`/api/auth/logout`, {
     method: 'POST',
     credentials: 'include', // Important for cookies
   });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to logout');
-  }
 }
 
 /**
  * Refresh authentication token
  */
 export async function refreshToken(): Promise<LoginResponse> {
-  const response = await fetch(`/api/auth/refresh`, {
+  const response = await fetchWithErrorHandling(`/api/auth/refresh`, {
     method: 'POST',
     credentials: 'include', // Important for cookies
   });
-
-  if (!response.ok) {
-    throw new Error('Failed to refresh token');
-  }
 
   return response.json();
 }
@@ -135,7 +143,9 @@ export async function getSession(): Promise<LoginResponse | null> {
       credentials: 'include', // Important for cookies
     });
 
+    // Если ответ не 2xx, возвращаем null (нет активной сессии)
     if (!response.ok) {
+      console.warn(`Session check failed with status ${response.status}`);
       return null;
     }
 
