@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Проверяем, включен ли моковый режим аутентификации
+const isMockAuthEnabled = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true';
+
 // Пути, требующие аутентификации
 const protectedPaths = ['/dashboard', '/profile', '/settings'];
 
@@ -15,6 +18,12 @@ const apiPaths = ['/api/'];
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // Если включен моковый режим аутентификации, пропускаем все проверки
+  if (isMockAuthEnabled) {
+    console.log('[MOCK] Bypassing auth check in middleware');
+    return NextResponse.next();
+  }
   
   // Пропускаем API маршруты - они обрабатываются отдельно
   if (apiPaths.some(path => pathname.startsWith(path))) {

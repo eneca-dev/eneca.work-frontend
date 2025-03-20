@@ -4,6 +4,20 @@ import { useState, useEffect, createContext, useContext, ReactNode, useCallback,
 import { login as loginApi, logout as logoutApi, getSession, refreshToken as refreshTokenApi } from '@/lib/auth/auth';
 import { useRouter } from 'next/navigation';
 
+// Мокированные данные пользователя для режима разработки
+const MOCK_USER = {
+  id: 'mock-user-id',
+  email: 'mock@example.com',
+  profile: {
+    firstName: 'Mock',
+    lastName: 'User',
+    role: 'admin'
+  }
+};
+
+// Проверяем, включен ли моковый режим аутентификации
+const isMockAuthEnabled = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true';
+
 interface User {
   id: string;
   email: string;
@@ -45,6 +59,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Function to refresh token
   const refreshSession = useCallback(async (forceRefresh = false) => {
+    // В моковом режиме просто обновляем время истечения токена и возвращаем пользователя
+    if (isMockAuthEnabled) {
+      console.log('[MOCK] Refreshing mock session');
+      // Устанавливаем время истечения на 1 час от текущего времени
+      const mockExpiresAt = Date.now() + 60 * 60 * 1000;
+      setUser(MOCK_USER);
+      setExpiresAt(mockExpiresAt);
+      return;
+    }
+    
     try {
       // Расширенное логирование
       const now = Date.now();
@@ -166,6 +190,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check for existing session on mount
   useEffect(() => {
     const initAuth = async () => {
+      // Если включен моковый режим, устанавливаем моковые данные
+      if (isMockAuthEnabled) {
+        console.log('[MOCK] Initializing mock authentication');
+        // Устанавливаем время истечения на 1 час от текущего времени
+        const mockExpiresAt = Date.now() + 60 * 60 * 1000;
+        setUser(MOCK_USER);
+        setExpiresAt(mockExpiresAt);
+        setIsLoading(false);
+        initializedRef.current = true;
+        return;
+      }
+      
       try {
         // Only check session if we haven't initialized yet or it's been more than 10 seconds
         const now = Date.now();
@@ -325,6 +361,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     
+    // В моковом режиме просто устанавливаем моковые данные
+    if (isMockAuthEnabled) {
+      console.log('[MOCK] Logging in with mock credentials');
+      // Устанавливаем время истечения на 1 час от текущего времени
+      const mockExpiresAt = Date.now() + 60 * 60 * 1000;
+      setUser(MOCK_USER);
+      setExpiresAt(mockExpiresAt);
+      setIsLoading(false);
+      router.push('/dashboard');
+      return;
+    }
+    
     try {
       console.log('[LOGIN] Attempting login for user:', email);
       const response = await loginApi({ email, password });
@@ -364,6 +412,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout function
   const logout = async () => {
     setIsLoading(true);
+    
+    // В моковом режиме просто очищаем состояние
+    if (isMockAuthEnabled) {
+      console.log('[MOCK] Logging out mock user');
+      setUser(null);
+      setExpiresAt(null);
+      setIsLoading(false);
+      router.push('/auth/login');
+      return;
+    }
     
     try {
       console.log('[LOGOUT] Logging out user');
