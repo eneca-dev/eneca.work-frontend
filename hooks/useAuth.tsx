@@ -232,7 +232,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Перехватываем ошибку 401
         if (response.status === 401) {
           // Только для API запросов, не для внешних ресурсов
-          const url = typeof input === 'string' ? input : input.url;
+          let url = '';
+          if (typeof input === 'string') {
+            url = input;
+          } else if (input instanceof URL) {
+            url = input.href; // URL объект имеет свойство href
+          } else if (input instanceof Request) {
+            url = input.url; // Request объект имеет свойство url
+          }
+          
           if (url.includes('/api/') && user) {
             console.log('[INTERCEPTOR] 401 response intercepted for URL:', url);
             try {
@@ -364,10 +372,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 // Custom hook to use auth context
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   
-  if (context === undefined) {
+  if (context === undefined || context === null) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   

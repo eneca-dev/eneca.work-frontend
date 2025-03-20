@@ -12,8 +12,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { useAuth } from "@/hooks/useAuth"
+import { AuthButton } from "@/components/auth-button"
 
-export default function SettingsPage() {
+export default function SettingsPage() {        
   const { user, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -115,9 +116,9 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="flex justify-end">
-                      <Button type="submit" loading={saving}>
+                      <AuthButton type="submit" loading={saving}>
                         Сохранить изменения
-                      </Button>
+                      </AuthButton>
                     </div>
                   </form>
                 </CardContent>
@@ -180,9 +181,9 @@ export default function SettingsPage() {
                     />
 
                     <div className="flex justify-end">
-                      <Button type="submit" loading={saving}>
+                      <AuthButton type="submit" loading={saving}>
                         Обновить пароль
-                      </Button>
+                      </AuthButton>
                     </div>
                   </form>
                 </CardContent>
@@ -243,9 +244,9 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button onClick={handleSave} loading={saving}>
+                  <AuthButton onClick={handleSave} loading={saving}>
                     Сохранить настройки
-                  </Button>
+                  </AuthButton>
                 </CardFooter>
               </Card>
             </TabsContent>
