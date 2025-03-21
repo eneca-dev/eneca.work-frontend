@@ -14,7 +14,7 @@ The main application directory that follows Next.js 13+ App Router structure:
 - `/app/dashboard/` - Main application dashboard with various features
   - `/tasks/` - Task management functionality
   - `/planning/` - Planning and scheduling features
-  - `/settings/` - User and application settings
+  - `/settings/` - User and application settings page with profile management
 
 ### `/components`
 Reusable UI components organized by functionality:
@@ -23,6 +23,8 @@ Reusable UI components organized by functionality:
 - `sidebar.tsx` - Main navigation sidebar
 - `auth-button.tsx` - Authentication buttons
 - `auth-input.tsx` - Form inputs for authentication
+- `FormInput.tsx` - Enhanced form input component with validation
+- `SelectField.tsx` - Dropdown select field component
 - `theme-provider.tsx` - Theme context provider for dark/light mode
 - `theme-toggle.tsx` - Theme switching component
 - `login-animation.tsx` - Animation component for login page
@@ -30,13 +32,22 @@ Reusable UI components organized by functionality:
 ### `/lib`
 Utility functions and shared logic:
 - `/lib/auth/` - Authentication utilities
+- `/lib/api/` - API service functions
+  - `profile.ts` - User profile data fetching functions
+  - `references.ts` - Reference data (departments, teams, etc.) fetching functions
+  - `mock-data.ts` - Mock data for development mode
+- `/lib/providers/` - React context providers
+  - `query-provider.tsx` - TanStack React Query provider setup
 - `/lib/logger/` - Logging functionality
 - `/lib/mocks/` - Mock data for development
 - `utils.ts` - General utility functions
 
 ### `/hooks`
 Custom React hooks:
-- `/hooks/auth/` - Authentication-related hooks
+- `/hooks/auth/` - Authentication-related hooks and types
+  - `types.ts` - TypeScript interfaces for authentication and user profiles
+- `useProfile.tsx` - Hook for managing user profile data
+- `useReferences.tsx` - Hook for managing reference data (departments, teams, etc.)
 - `use-mobile.tsx` - Hook for responsive design and mobile detection
 - `use-toast.ts` - Toast notification hook
 
@@ -52,6 +63,7 @@ Additional styling resources beyond the global CSS.
 - `tailwind.config.ts` - Tailwind CSS configuration
 - `tsconfig.json` - TypeScript configuration
 - `package.json` - Project dependencies and scripts
+  - Dependencies include `@tanstack/react-query` for data fetching
 - `.env.local` - Environment variables (not committed to repository)
 
 ## Authentication Flow
@@ -62,6 +74,10 @@ The application implements a complete authentication system with:
 - Protected routes
 - Token-based authentication with refresh tokens
 
+## Data Management
+- TanStack React Query for server state management
+- Support for both production API calls and development mode mock data
+- Form validation with React Hook Form
 
 ## Development Workflow
 The project uses Next.js development server with hot reloading. Start the development server with:
