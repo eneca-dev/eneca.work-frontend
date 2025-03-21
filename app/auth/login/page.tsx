@@ -8,7 +8,9 @@ import { useRouter } from "next/navigation"
 import { AuthButton } from "@/components/auth-button"
 import { AuthInput } from "@/components/auth-input"
 import { LoginAnimation } from "@/components/login-animation"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/hooks/auth"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 
 export default function LoginPage() {
   const { login, error: authError } = useAuth()

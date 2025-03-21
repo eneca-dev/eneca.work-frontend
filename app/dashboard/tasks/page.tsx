@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Send } from "lucide-react"
 import { Sidebar } from "@/components/sidebar"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/hooks/auth"
 
 export default function TasksPage() {
   const { user, isLoading } = useAuth()

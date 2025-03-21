@@ -3,7 +3,8 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { AuthProvider } from '@/hooks/useAuth'
+import { AuthProvider } from '@/hooks/auth'
+import MockUserSwitcherWrapper from '@/components/debug/MockUserSwitcherWrapper'
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] })
 
@@ -23,7 +24,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            {children}
+            <MockUserSwitcherWrapper>
+              {children}
+            </MockUserSwitcherWrapper>
           </ThemeProvider>
         </AuthProvider>
       </body>

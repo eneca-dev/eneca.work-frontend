@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { LogOut, User, Home, Calendar, Send, ChevronLeft, Settings } from "lucide-react"
 import { useState } from "react"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/hooks/auth"
 
 interface SidebarProps {
   user: {

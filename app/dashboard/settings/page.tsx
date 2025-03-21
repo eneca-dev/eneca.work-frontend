@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Settings, User, Shield, Bell } from "lucide-react"
+import { Settings, User, PenSquare } from "lucide-react"
 import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
 import { AuthInput } from "@/components/auth-input"
@@ -11,8 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/hooks/auth"
 import { AuthButton } from "@/components/auth-button"
+import { getCategories } from "@/lib/categoryData"
 
 export default function SettingsPage() {        
   const { user, isLoading } = useAuth()
@@ -84,20 +85,6 @@ export default function SettingsPage() {
                 <User className="h-4 w-4 mr-2" />
                 <span>Профиль</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="security"
-                className="flex items-center dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-gray-200"
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                <span>Безопасность</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="notifications"
-                className="flex items-center dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-gray-200"
-              >
-                <Bell className="h-4 w-4 mr-2" />
-                <span>Уведомления</span>
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="profile" className="space-y-6">
@@ -112,7 +99,9 @@ export default function SettingsPage() {
                       <AuthInput label="Имя" id="name" type="text" defaultValue={user?.profile?.full_name || ''} required />
                       <AuthInput label="Email" id="email" type="email" defaultValue={user?.email || ''} required />
                       <AuthInput label="Должность" id="position" type="text" defaultValue={user?.profile?.position || 'Менеджер'} />
-                      <AuthInput label="Телефон" id="phone" type="tel" defaultValue={user?.profile?.phone || '+7 (999) 123-45-67'} />
+                      <AuthInput label="Отдел" id="department" type="text" defaultValue={user?.profile?.department || 'Разработка'} />
+                      <AuthInput label="Команда" id="team" type="text" defaultValue={user?.profile?.team || 'Frontend'} />
+                      <AuthInput label="Категория" id="category" type="text" defaultValue={user?.profile?.category || 'Разработчик'} />
                     </div>
 
                     <div className="flex justify-end">
@@ -148,106 +137,28 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="security" className="space-y-6">
-              <Card className="dark:bg-gray-800/70 dark:border-gray-700/50">
-                <CardHeader>
-                  <CardTitle>Изменение пароля</CardTitle>
-                  <CardDescription>Обновите ваш пароль для повышения безопасности аккаунта.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSave} className="space-y-4">
-                    <AuthInput
-                      label="Текущий пароль"
-                      id="currentPassword"
-                      type="password"
-                      required
-                      showPasswordToggle={true}
-                    />
-                    <AuthInput
-                      label="Новый пароль"
-                      id="newPassword"
-                      type="password"
-                      required
-                      showPasswordToggle={true}
-                    />
-                    <AuthInput
-                      label="Подтверждение пароля"
-                      id="confirmPassword"
-                      type="password"
-                      required
-                      showPasswordToggle={true}
-                    />
-
-                    <div className="flex justify-end">
-                      <AuthButton type="submit" loading={saving}>
-                        Обновить пароль
-                      </AuthButton>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
 
               <Card className="dark:bg-gray-800/70 dark:border-gray-700/50">
                 <CardHeader>
-                  <CardTitle>Двухфакторная аутентификация</CardTitle>
-                  <CardDescription>Добавьте дополнительный уровень безопасности для вашего аккаунта.</CardDescription>
+                  <CardTitle>Роль и разрешения</CardTitle>
+                  <CardDescription>Информация о вашей роли и доступных разрешениях в системе.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="2fa">Двухфакторная аутентификация</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Защитите ваш аккаунт с помощью SMS-кода при входе.
-                      </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="role">Роль</Label>
+                      <div id="role" className="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md text-sm">
+                        {user?.profile?.role || 'Пользователь'}
+                      </div>
                     </div>
-                    <Switch id="2fa" />
+                    <div>
+                      <Label htmlFor="permissions">Разрешения</Label>
+                      <div id="permissions" className="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded-md text-sm">
+                        {user?.profile?.permissions || 'Стандартные разрешения пользователя'}
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="notifications" className="space-y-6">
-              <Card className="dark:bg-gray-800/70 dark:border-gray-700/50">
-                <CardHeader>
-                  <CardTitle>Настройки уведомлений</CardTitle>
-                  <CardDescription>Настройте, какие уведомления вы хотите получать.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="email-notifications">Email уведомления</Label>
-                      <p className="text-sm text-muted-foreground">Получать уведомления на email.</p>
-                    </div>
-                    <Switch id="email-notifications" defaultChecked />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="task-notifications">Уведомления о задачах</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Получать уведомления о новых и обновленных задачах.
-                      </p>
-                    </div>
-                    <Switch id="task-notifications" defaultChecked />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="system-notifications">Системные уведомления</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Получать уведомления о системных обновлениях и событиях.
-                      </p>
-                    </div>
-                    <Switch id="system-notifications" />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <AuthButton onClick={handleSave} loading={saving}>
-                    Сохранить настройки
-                  </AuthButton>
-                </CardFooter>
               </Card>
             </TabsContent>
           </Tabs>
