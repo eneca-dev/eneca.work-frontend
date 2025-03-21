@@ -6,20 +6,69 @@ import { useState, useEffect } from "react"
 import { Settings, User, PenSquare } from "lucide-react"
 import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
-import { AuthInput } from "@/components/auth-input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { useAuth } from "@/hooks/auth"
 import { AuthButton } from "@/components/auth-button"
-import { getCategories } from "@/lib/categoryData"
+import { useForm } from "react-hook-form"
+import { useProfile } from "@/hooks/useProfile"
+import { useReferences } from "@/hooks/useReferences"
+import { SelectField } from "@/components/SelectField"
+import { UserProfile, Department, Team, Position, Category } from "@/hooks/auth/types"
+import { FormInput } from "@/components/FormInput"
 
 export default function SettingsPage() {        
-  const { user, isLoading } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
+  const { profile, isLoading: profileLoading, isUpdating, updateProfile } = useProfile()
+  const { 
+    departments, 
+    teams, 
+    positions, 
+    categories, 
+    isLoading: referencesLoading,
+    updateSelectedDepartment
+  } = useReferences()
+  
   const [mounted, setMounted] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [saving, setSaving] = useState(false)
+
+  // React Hook Form
+  const { register, handleSubmit, formState, setValue, watch } = useForm<UserProfile>({
+    defaultValues: {
+      first_name: '',
+      last_name: '',
+      email: '',
+      department_id: '',
+      team_id: '',
+      position_id: '',
+      category_id: ''
+    }
+  })
+  
+  const { isDirty, errors } = formState
+  const watchDepartmentId = watch('department_id')
+
+  // Отслеживаем изменение отдела для обновления списка команд
+  useEffect(() => {
+    if (watchDepartmentId) {
+      updateSelectedDepartment(watchDepartmentId)
+    }
+  }, [watchDepartmentId, updateSelectedDepartment])
+
+  // Инициализация данных формы из профиля
+  useEffect(() => {
+    if (profile) {
+      setValue('first_name', profile.first_name || '')
+      setValue('last_name', profile.last_name || '')
+      setValue('email', profile.email || '')
+      setValue('department_id', profile.department_id || '')
+      setValue('team_id', profile.team_id || '')
+      setValue('position_id', profile.position_id || '')
+      setValue('category_id', profile.category_id || '')
+    }
+  }, [profile, setValue])
 
   useEffect(() => {
     setMounted(true)
@@ -47,7 +96,24 @@ export default function SettingsPage() {
     }
   }, [])
 
-  if (isLoading) {
+  // Предупреждение о несохраненных изменениях при уходе со страницы
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
+
+  const onSubmit = (data: UserProfile) => {
+    updateProfile(data)
+  }
+
+  if (authLoading || profileLoading || referencesLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -59,15 +125,9 @@ export default function SettingsPage() {
     return null
   }
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setTimeout(() => setSaving(false), 1000)
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      <Sidebar user={{ name: user?.profile?.full_name, email: user?.email || '' }} />
+      <Sidebar user={{ name: user?.profile?.first_name + ' ' + user?.profile?.last_name, email: user?.email || '' }} />
 
       <div className={`transition-all duration-300 ${sidebarCollapsed ? "pl-20" : "pl-64"}`}>
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -94,19 +154,88 @@ export default function SettingsPage() {
                   <CardDescription>Обновите вашу личную информацию и контактные данные.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSave} className="space-y-4">
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <AuthInput label="Имя" id="name" type="text" defaultValue={user?.profile?.full_name || ''} required />
-                      <AuthInput label="Email" id="email" type="email" defaultValue={user?.email || ''} required />
-                      <AuthInput label="Должность" id="position" type="text" defaultValue={user?.profile?.position || 'Менеджер'} />
-                      <AuthInput label="Отдел" id="department" type="text" defaultValue={user?.profile?.department || 'Разработка'} />
-                      <AuthInput label="Команда" id="team" type="text" defaultValue={user?.profile?.team || 'Frontend'} />
-                      <AuthInput label="Категория" id="category" type="text" defaultValue={user?.profile?.category || 'Разработчик'} />
+                      <FormInput 
+                        label="Имя" 
+                        id="first_name" 
+                        type="text" 
+                        {...register('first_name', { required: 'Имя обязательно' })}
+                        error={errors.first_name?.message}
+                      />
+                      <FormInput 
+                        label="Фамилия" 
+                        id="last_name" 
+                        type="text" 
+                        {...register('last_name', { required: 'Фамилия обязательна' })}
+                        error={errors.last_name?.message}
+                      />
+                      
+                      <SelectField
+                        label="Отдел"
+                        id="department_id"
+                        options={departments.map((dept: Department) => ({
+                          value: dept.department_id,
+                          label: dept.department_name
+                        }))}
+                        value={watch('department_id')}
+                        onChange={(value) => setValue('department_id', value, { shouldDirty: true })}
+                        error={errors.department_id?.message}
+                      />
+                      
+                      <SelectField
+                        label="Команда"
+                        id="team_id"
+                        options={teams.map((team: Team) => ({
+                          value: team.team_id,
+                          label: team.team_name
+                        }))}
+                        value={watch('team_id')}
+                        onChange={(value) => setValue('team_id', value, { shouldDirty: true })}
+                        error={errors.team_id?.message}
+                      />
+                      
+                      <SelectField
+                        label="Должность"
+                        id="position_id"
+                        options={positions.map((pos: Position) => ({
+                          value: pos.position_id,
+                          label: pos.position_name
+                        }))}
+                        value={watch('position_id')}
+                        onChange={(value) => setValue('position_id', value, { shouldDirty: true })}
+                        error={errors.position_id?.message}
+                      />
+                      
+                      <SelectField
+                        label="Категория"
+                        id="category_id"
+                        options={categories.map((cat: Category) => ({
+                          value: cat.category_id,
+                          label: cat.category_name
+                        }))}
+                        value={watch('category_id')}
+                        onChange={(value) => setValue('category_id', value, { shouldDirty: true })}
+                        error={errors.category_id?.message}
+                      />
+                      
+                      <FormInput 
+                        label="Email" 
+                        id="email" 
+                        type="email" 
+                        {...register('email')}
+                        disabled={true}
+                      />
                     </div>
 
                     <div className="flex justify-end">
-                      <AuthButton type="submit" loading={saving}>
-                        Сохранить изменения
+                      <AuthButton 
+                        type="submit" 
+                        loading={isUpdating}
+                        disabled={!isDirty}
+                        className={isDirty ? 'bg-primary hover:bg-primary/90' : 'bg-gray-400'}
+                      >
+                        {isDirty ? 'Сохранить изменения' : 'Изменений нет'}
                       </AuthButton>
                     </div>
                   </form>

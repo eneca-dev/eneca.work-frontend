@@ -5,6 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from '@/hooks/auth'
 import MockUserSwitcherWrapper from '@/components/debug/MockUserSwitcherWrapper'
+import QueryProvider from '@/lib/providers/query-provider'
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] })
 
@@ -24,9 +25,11 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <MockUserSwitcherWrapper>
-              {children}
-            </MockUserSwitcherWrapper>
+            <QueryProvider>
+              <MockUserSwitcherWrapper>
+                {children}
+              </MockUserSwitcherWrapper>
+            </QueryProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>
