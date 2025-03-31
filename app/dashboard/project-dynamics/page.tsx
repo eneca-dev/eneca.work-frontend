@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { useAuth } from "@/hooks/auth"
 
-export default function TasksPage() {
+export default function ProjectDynamicsPage() {
   const { user, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -68,14 +68,13 @@ export default function TasksPage() {
 
       <div className={`transition-all duration-300 ${sidebarCollapsed ? "pl-20" : "pl-64"}`}>
         <iframe 
-          src="https://v0-project-task-system.vercel.app/" 
+          src="https://project-dynamic.vercel.app/" 
           className="w-full border-0"
           style={{ height: frameHeight }}
-          title="Project Task System"
+          title="Project Dynamics"
           sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
         />
       </div>
     </div>
   )
-}
-
+} 

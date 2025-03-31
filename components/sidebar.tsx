@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
-import { LogOut, User, Home, Calendar, Send, ChevronLeft, Settings } from "lucide-react"
+import { LogOut, User, Home, Calendar, Send, ChevronLeft, Settings, BarChart, LineChart } from "lucide-react"
 import { useState } from "react"
 import { useAuth } from "@/hooks/auth"
 
@@ -43,9 +43,19 @@ export function Sidebar({ user }: SidebarProps) {
       icon: Calendar,
     },
     {
+      title: "Динамика по проектам",
+      href: "/dashboard/project-dynamics",
+      icon: BarChart,
+    },
+    {
       title: "Передача заданий",
       href: "/dashboard/tasks",
       icon: Send,
+    },
+    {
+      title: "Аналитика проектов",
+      href: "/dashboard/project-analytics",
+      icon: LineChart,
     },
   ]
 
