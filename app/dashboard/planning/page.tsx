@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar } from "lucide-react"
 import { Sidebar } from "@/components/sidebar"
 import { useAuth } from "@/hooks/auth"
 
@@ -9,6 +8,7 @@ export default function PlanningPage() {
   const { user, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [frameHeight, setFrameHeight] = useState("100vh")
 
   useEffect(() => {
     setMounted(true)
@@ -31,8 +31,17 @@ export default function PlanningPage() {
       observer.observe(sidebar, { attributes: true })
     }
 
+    // Update iframe height on resize
+    const updateHeight = () => {
+      setFrameHeight(`100vh`)
+    }
+    
+    updateHeight()
+    window.addEventListener('resize', updateHeight)
+
     return () => {
       observer.disconnect()
+      window.removeEventListener('resize', updateHeight)
     }
   }, [])
 
@@ -48,27 +57,23 @@ export default function PlanningPage() {
     return null
   }
 
+  // Prepare user name from profile if available
+  const userName = user?.profile 
+    ? `${user.profile.first_name || ''} ${user.profile.last_name || ''}`.trim() 
+    : '';
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      <Sidebar user={{ name: user?.profile?.full_name, email: user?.email || '' }} />
+    <div className="min-h-screen">
+      <Sidebar user={{ name: userName, email: user?.email || '' }} />
 
       <div className={`transition-all duration-300 ${sidebarCollapsed ? "pl-20" : "pl-64"}`}>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-6 animate-fade-in transition-colors duration-200">
-            <div className="flex items-center space-x-2 mb-4">
-              <Calendar className="h-5 w-5 text-[#1e7260]" />
-              <h2 className="text-lg font-medium dark:text-gray-200">Система планирования</h2>
-            </div>
-
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              Здесь будет размещена система планирования задач и проектов.
-            </p>
-
-            <div className="h-64 flex items-center justify-center text-gray-300 dark:text-gray-600 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
-              <div className="h-16 w-16" />
-            </div>
-          </div>
-        </main>
+        <iframe 
+          src="https://v0-enecawork.vercel.app/" 
+          className="w-full border-0"
+          style={{ height: frameHeight }}
+          title="Eneca Planning System"
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+        />
       </div>
     </div>
   )
